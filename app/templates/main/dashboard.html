@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Welcome, {{ current_user.username }}!</h1>
+        </div>
+    </div>
+
+    <!-- Time Entry Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Add Time Entry</h5>
+                    <form id="timeEntryForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="hours" class="form-label">Hours</label>
+                                <input type="number" class="form-control" id="hours" name="hours" step="0.25" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="projectCode" class="form-label">Project Code</label>
+                                <input type="text" class="form-control" id="projectCode" name="projectCode" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="isInvoiced" name="isInvoiced">
+                                    <label class="form-check-label" for="isInvoiced">Invoiced</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="invoiceNumber" class="form-label">Invoice Number</label>
+                                <input type="text" class="form-control" id="invoiceNumber" name="invoiceNumber">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Entries Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Time Entries</h5>
+                    <div class="table-responsive">
+                        <table class="table" id="timeEntriesTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Hours</th>
+                                    <th>Project Code</th>
+                                    <th>Description</th>
+                                    <th>Invoiced</th>
+                                    <th>Invoice #</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Time entries will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadTimeEntries();
+    
+    // Handle form submission
+    document.getElementById('timeEntryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            hours: parseFloat(document.getElementById('hours').value),
+            project_code: document.getElementById('projectCode').value,
+            description: document.getElementById('description').value,
+            is_invoiced: document.getElementById('isInvoiced').checked,
+            invoice_number: document.getElementById('invoiceNumber').value || null
+        };
+        
+        fetch('/api/time-entries', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadTimeEntries();
+            document.getElementById('timeEntryForm').reset();
+        })
+        .catch(error => console.error('Error:', error));
+    });
+});
+
+function loadTimeEntries() {
+    fetch('/api/time-entries')
+        .then(response => response.json())
+        .then(entries => {
+            const tbody = document.querySelector('#timeEntriesTable tbody');
+            tbody.innerHTML = '';
+            
+            entries.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(entry.created_at).toLocaleDateString()}</td>
+                    <td>${entry.hours}</td>
+                    <td>${entry.project_code}</td>
+                    <td>${entry.description}</td>
+                    <td>${entry.is_invoiced ? '✓' : ''}</td>
+                    <td>${entry.invoice_number || ''}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editEntry(${entry.id})">Edit</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function editEntry(id) {
+    // TODO: Implement edit functionality
+    console.log('Edit entry:', id);
+}
+</script>
+{% endblock %}
